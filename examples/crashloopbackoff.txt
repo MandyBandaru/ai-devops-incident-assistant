@@ -1,0 +1,4 @@
+Pod: payments-api-7d9f
+Status: CrashLoopBackOff
+Restart count: 6
+Recent log: Error: DATABASE_URL is not configured
