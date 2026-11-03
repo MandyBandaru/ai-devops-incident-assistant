@@ -1,0 +1,6 @@
+{
+  "service": "Jenkins",
+  "stage": "Build",
+  "build_number": 42,
+  "error": "connection timed out"
+}
