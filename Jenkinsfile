@@ -2,6 +2,10 @@
 pipeline {
     agent any
 
+    environment {
+        PYTHON = 'C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python313\\python.exe'
+    }
+
     stages {
         stage('Checkout Source') {
             steps {
@@ -12,20 +16,13 @@ pipeline {
 
         stage('Verify Python') {
             steps {
-                bat '"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python313\\python.exe" --version'
-            }
-        }
-
-        stage('Check Python PATH') {
-            steps {
-                bat 'where python'
-                bat 'python --version'
+                bat '"%PYTHON%" --version'
             }
         }
 
         stage('Quality Gate - Unit Tests') {
             steps {
-                bat '"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python313\\python.exe" -m unittest discover -v'
+                bat '"%PYTHON%" -m unittest discover -v'
             }
         }
 
@@ -34,7 +31,5 @@ pipeline {
                 echo 'Quality gate passed. All unit tests passed successfully.'
             }
         }
-        
-        
     }
 }
