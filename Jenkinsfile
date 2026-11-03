@@ -16,6 +16,13 @@ pipeline {
             }
         }
 
+        stage('Check Python PATH') {
+            steps {
+                bat 'where python'
+                bat 'python --version'
+            }
+        }
+
         stage('Quality Gate - Unit Tests') {
             steps {
                 bat '"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python313\\python.exe" -m unittest discover -v'
@@ -27,5 +34,7 @@ pipeline {
                 echo 'Quality gate passed. All unit tests passed successfully.'
             }
         }
+        
+        
     }
 }
