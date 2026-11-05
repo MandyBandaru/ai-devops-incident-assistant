@@ -1,7 +1,7 @@
 import json
 
 from prompt_builder import build_troubleshooting_prompt
-from ai_client_simulation import get_ai_response
+from providers.manager import get_provider
 
 
 def main():
@@ -21,7 +21,8 @@ def main():
         print(prompt)
 
         # Get simulated response
-        result = get_ai_response(error_message)
+        provider = get_provider()
+        result = provider.analyze_incident(error_message)
 
         # Validate response
         if not isinstance(result, dict):
