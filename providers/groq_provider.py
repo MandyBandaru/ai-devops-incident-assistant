@@ -34,14 +34,14 @@ class GroqProvider(AIProvider): #Because GroqProvider inherits from AIProvider #
                 {"role": "user", "content": instructions}
             ],
             temperature=0.6,
-            max_completion_tokens=1000
+            max_completion_tokens=2000
         )
+        #print("DEBUG - Finish reason:", response.choices[0].finish_reason) #This indicates why the AI stopped generating text. It can be "stop" (normal), "length" (truncated), or "content_filter" (filtered).
+        #print("DEBUG - Completion tokens:", response.usage.completion_tokens) #This is the number of tokens used for the generated completion (the AI's response).
 
-                # Validate AI response
-                #  #For our incident assistant, we require:
-                #- A response must contain at least one choice.
-                #- The response must contain text.
-                #- The text must not be empty.
+                        # Validate AI response
+                        # The response must contain at least one choice.
+                        # The response must contain non-empty text..
         if not response.choices:
             raise ValueError("Groq returned no response choices")
 
@@ -49,6 +49,14 @@ class GroqProvider(AIProvider): #Because GroqProvider inherits from AIProvider #
 
         if not analysis or not analysis.strip():
             raise ValueError("Groq returned an empty AI response")
+
+        # Check whether AI response was truncated
+        if response.choices[0].finish_reason == "length":
+            analysis += (
+                "\n\n[WARNING: AI response was truncated because "
+                "the completion token limit was reached. "
+                "Some troubleshooting sections may be incomplete.]"
+            )
 
         return {
             "provider": "groq",
