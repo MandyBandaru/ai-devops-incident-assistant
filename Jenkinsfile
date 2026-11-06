@@ -20,6 +20,12 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                bat '"%PYTHON%" -m pip install groq'
+            }
+        }
+
         stage('Quality Gate - Unit Tests') {
             steps {
                 bat '"%PYTHON%" -m unittest discover -v'
