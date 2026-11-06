@@ -1,4 +1,3 @@
-import json
 
 from prompt_builder import build_troubleshooting_prompt
 from providers.manager import get_provider
@@ -20,7 +19,7 @@ def main():
         print("\nGenerated AI Prompt:")
         print(prompt)
 
-        # Get simulated response
+        # Select the configured AI provider
         provider = get_provider()
         result = provider.analyze_incident(error_message)
 
@@ -28,8 +27,37 @@ def main():
         if not isinstance(result, dict):
             raise TypeError("Invalid response format.")
 
-        print("\nTroubleshooting Report:")
-        print(json.dumps(result, indent=4))
+        required_fields = [
+            "provider",
+            "model",
+            "incident",
+            "analysis",
+            "root_cause_confirmed"
+        ]
+
+        for field in required_fields:
+            if field not in result:
+                raise ValueError(f"Missing response field: {field}")
+
+        # Display readable troubleshooting report
+        print("\n" + "=" * 65)
+        print("             AI DEVOPS INCIDENT REPORT")
+        print("=" * 65)
+
+        print(f"\nProvider              : {result['provider']}")
+        print(f"Model                 : {result['model']}")
+        print(f"Incident              : {result['incident']}")
+        print(f"Root cause confirmed  : {result['root_cause_confirmed']}")
+
+        print("\n" + "-" * 65)
+        print("AI TROUBLESHOOTING ANALYSIS")
+        print("-" * 65)
+
+        print(result["analysis"])
+
+        print("\n" + "=" * 65)
+        print("                 END OF REPORT")
+        print("=" * 65)
 
     except KeyboardInterrupt:
         print("\nApplication interrupted by user.")
