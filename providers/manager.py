@@ -4,7 +4,7 @@ from providers.mock_provider import MockProvider
 
 # Future providers — not implemented yet
 # from providers.bedrock_provider import BedrockProvider
-# from providers.groq_provider import GroqProvider
+from providers.groq_provider import GroqProvider
 # from providers.ollama_provider import OllamaProvider
 
 
@@ -20,8 +20,8 @@ def get_provider():
     # if provider_name == "bedrock":
     #     return BedrockProvider()
 
-    # if provider_name == "groq":
-    #     return GroqProvider()
+    if provider_name == "groq":
+        return GroqProvider()
 
     # if provider_name == "ollama":
     #     return OllamaProvider()
