@@ -1,280 +1,333 @@
 # AI-Powered DevOps Incident Assistant
 
-**Project status:** Working Python prototype — simulated AI response engine
+A Python command-line prototype for analyzing DevOps error messages with selectable mock and Groq providers.
 
-## 1. Project Overview
+The project demonstrates provider abstraction, prompt construction, API error handling, automated testing, and Jenkins CI. It is a learning and portfolio project for DevOps, Platform Engineering, and LLMOps concepts.
 
-The AI-Powered DevOps Incident Assistant is a Python-based learning and portfolio project designed to help DevOps engineers understand and troubleshoot common infrastructure, build, and deployment errors.
+## Project status
 
-The application accepts a DevOps error message, builds a structured troubleshooting prompt, and generates a troubleshooting report.
+- Mock and Groq providers are implemented.
+- 24 automated tests are reported passing.
+- The latest Jenkins CI build is reported successful.
+- This is a CLI prototype, not a production deployment.
 
-**Current implementation:** The response engine uses Python rule-based logic to simulate AI responses. A real AI model/API has not yet been integrated.
+Test and Jenkins results above are the latest reported project results; they are not live status checks.
 
-## 2. Project Objectives
+## Project overview
 
-The goal is to demonstrate practical knowledge of:
+The application accepts one incident message, builds a structured troubleshooting prompt, passes the incident to the selected provider, validates the response shape, and prints a report.
 
-- Python application development
-- Prompt engineering
-- AI-assisted DevOps troubleshooting concepts
-- HTTP requests and API integration fundamentals
-- Error handling and input validation
-- Automated testing with Python `unittest`
-- Git, GitHub, Jenkins, and CI/CD
-- AI application safety and responsible recommendations
+- **Mock provider:** Applies local rules for Maven and Docker errors, with a fallback for unrecognized incidents. It does not call an AI service.
+- **Groq provider:** Sends a prompt to the Groq API and returns the model's text with provider metadata.
 
-## 3. Current Architecture
+The application analyzes text supplied by the user. It does not connect to Jenkins, Docker, Kubernetes, cloud accounts, or other infrastructure to collect incident data or perform actions.
 
-The application follows a modular Python architecture.
+## Architecture and provider abstraction
+
+Both providers implement the `AIProvider` interface and return a dictionary with the same five fields: `provider`, `model`, `incident`, `analysis`, and `root_cause_confirmed`.
 
 ```text
-User Input
-    |
-    v
-app.py
-    |
-    v
-prompt_builder.py
-    |
-    v
-ai_client_simulation.py
-    |
-    v
-Troubleshooting Report
+Single-line incident input
+             |
+             v
+          app.py
+  validates input, builds and
+  prints a troubleshooting prompt
+             |
+             v
+    providers/manager.py
+       selects a provider
+        /           \
+       v             v
+ MockProvider     GroqProvider
+       |             |
+       v             +-- builds the API prompt again
+ai_client_          |
+simulation.py       v
+ local rules      Groq API
+       |             |
+       |             v
+       |       validates returned text
+       |             |
+       +------       |
+              \     /
+               v   v
+     common five-field response
+               |
+               v
+             app.py
+       validates and prints report
 ```
 
-### Component responsibilities
+**Current implementation detail:** `app.py` builds and prints a prompt before provider selection. `GroqProvider` then builds the prompt again for its API request. `MockProvider` passes the original incident text to the local simulation and formats its troubleshooting details into the `analysis` field; it does not use the printed prompt to produce its mock response.
 
-| Component | Responsibility |
+| Field | Meaning |
 |---|---|
-| `app.py` | Handles user input, coordinates application execution, validates responses, and handles exceptions. |
-| `prompt_builder.py` | Creates structured troubleshooting instructions using the supplied error message. |
-| `ai_client_simulation.py` | Uses Python rules to generate simulated troubleshooting responses. |
-| `test_ai_client_simulation.py` | Automatically tests response classification and prompt generation. |
-| `prompts/` | Stores reusable troubleshooting prompts. |
-| `examples/` | Stores example incidents and learning exercises. |
+| `provider` | Provider name, such as `mock` or `groq`. |
+| `model` | Groq model identifier or a descriptive rule-based label for the mock provider. |
+| `incident` | The incident text supplied by the user. |
+| `analysis` | Troubleshooting analysis as readable text. |
+| `root_cause_confirmed` | Whether the root cause is confirmed. The current providers return `False`. |
 
-## 4. Current Features Implemented
-
-- Accepts DevOps error messages from the user.
-- Validates empty input.
-- Generates structured troubleshooting prompts.
-- Recognizes Maven-related errors.
-- Recognizes Docker daemon-related errors.
-- Handles unknown errors.
-- Returns explanations, possible causes, and recommended actions.
-- Distinguishes possible causes from confirmed root causes.
-- Handles application interruptions and input/output errors.
-- Includes automated unit tests.
-
-**Important:** The application does not currently call an LLM. Its responses are based on predefined Python conditions.
-
-## 5. Example Incident
-
-Input:
-
-```text
-mvn: command not found
-```
-
-Example simulated response:
-
-```json
-{
-    "explanation": "Jenkins cannot find Maven.",
-    "possible_causes": [
-        "Maven is not installed.",
-        "Maven is missing from PATH."
-    ],
-    "root_cause_confirmed": false,
-    "recommended_action": "Check Maven installation and PATH."
-}
-```
-
-The report provides possible explanations, not a confirmed root cause. An engineer must investigate the Jenkins agent before deciding what caused the failure.
-
-## 6. Project Structure
+## Repository structure
 
 ```text
 ai-devops-incident-assistant/
-|
 |-- app.py
 |-- prompt_builder.py
 |-- ai_client_simulation.py
+|-- providers/
+|   |-- __init__.py
+|   |-- base.py
+|   |-- manager.py
+|   |-- mock_provider.py
+|   `-- groq_provider.py
 |-- test_ai_client_simulation.py
-|
+|-- test_app.py
+|-- test_groq_provider.py
+|-- test_incident_analyzer.py
+|-- test_provider_manager.py
 |-- incident_analyzer.py
 |-- incident_analyzer_v2.py
-|-- test_incident_analyzer.py
-|
+|-- error_handling.py
+|-- api_learning.py
+|-- api_auth_learning.py
 |-- incident.json
-|-- incident_report.json
-|-- incident_report_v2.json
-|
-|-- Jenkinsfile
-|-- README.md
-|-- .gitignore
-|
 |-- prompts/
 |   |-- incident_v1.md
-|   |-- jenkins_weak.md
 |   |-- jenkins_structured.md
-|
+|   `-- jenkins_weak.md
 |-- examples/
+|   |-- crashloopbackoff.txt
+|   |-- hello.py
+|   |-- hour4_prompt_comparison.md
+|   `-- mvnerror.txt
+|-- Jenkinsfile
+|-- .gitignore
+`-- README.md
 ```
 
-Some files belong to earlier learning exercises. Generated reports and sample incident data should be reviewed before committing them.
+The incident analyzers, error-handling exercise, and API learning scripts are earlier standalone exercises rather than part of the provider-based application flow.
 
-## 7. Environment and Setup
+## Installation on Windows
 
-### Prerequisites
+Prerequisites:
 
 - Python 3.10 or later
 - Git
-- Visual Studio Code (recommended)
+- A Groq API key only if using the Groq provider
 
-### Clone the repository
+In PowerShell, clone the repository and install the Groq SDK in a virtual environment:
 
-```bash
+```powershell
 git clone https://github.com/MandyBandaru/ai-devops-incident-assistant.git
-
-cd ai-devops-incident-assistant
+Set-Location ai-devops-incident-assistant
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install groq
 ```
 
-### Verify Python
+The repository does not currently include `requirements.txt` or a dependency lockfile. The Jenkins pipeline also installs `groq` directly.
 
-```bash
-python --version
+## Provider configuration and execution
+
+Provider selection uses the `AI_PROVIDER` environment variable. Its value is case-insensitive.
+
+| Setting | Result |
+|---|---|
+| `AI_PROVIDER` unset | Selects the mock provider. |
+| `AI_PROVIDER=mock` | Selects the mock provider. |
+| `AI_PROVIDER=groq` | Selects the Groq provider. |
+| Any other value | Raises an unsupported-provider error. |
+
+The Groq provider also requires `GROQ_API_KEY`. The Groq SDK is imported by the provider manager, so install it even when using the mock provider.
+
+### Run with the mock provider
+
+The mock provider is the default. To select it explicitly in the current PowerShell session:
+
+```powershell
+$env:AI_PROVIDER = "mock"
+python .\app.py
 ```
 
-The prototype currently uses Python 3.13.1.
-
-No external AI API key is required to run the simulated application.
-
-## 8. Run the Application
-
-From the project root directory:
-
-```bash
-python app.py
-```
-
-Enter an error message when prompted.
-
-Example:
+Enter one incident message when prompted, for example:
 
 ```text
 Enter your DevOps error: mvn: command not found
 ```
 
-The application generates a structured troubleshooting prompt and a simulated troubleshooting report.
+### Run with Groq
 
-## 9. Run Automated Tests
+The following example uses the Windows credential prompt to hide the key while it is entered. The Groq SDK reads `GROQ_API_KEY` from the process environment, so the credential is temporarily converted to a string for the application and removed from the environment afterward. Do not print or save the value.
 
-The project uses Python's built-in `unittest` framework.
+```powershell
+$groqCredential = Get-Credential -UserName "groq" -Message "Enter your Groq API key in the password field"
+$secretPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($groqCredential.Password)
 
-Run the tests:
-
-```bash
-python -m unittest -v test_ai_client_simulation
+try {
+    $env:GROQ_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($secretPointer)
+    $env:AI_PROVIDER = "groq"
+    python .\app.py
+}
+finally {
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($secretPointer)
+    Remove-Item Env:GROQ_API_KEY -ErrorAction SilentlyContinue
+    Remove-Item Env:AI_PROVIDER -ErrorAction SilentlyContinue
+    Remove-Variable groqCredential, secretPointer -ErrorAction SilentlyContinue
+}
 ```
 
-### Current verified test coverage
+Running with Groq can make a real API request and may incur usage on the configured account. Never commit API keys or place them in source code, README examples, or shell commands.
 
-| Test | Purpose |
-|---|---|
-| `test_maven_error` | Verifies Maven error handling. |
-| `test_docker_error` | Verifies Docker error handling. |
-| `test_unknown_error` | Verifies unknown error handling. |
-| `test_prompt_contains_error` | Verifies that the prompt includes the input error. |
-| `test_prompt_is_not_empty` | Verifies prompt generation. |
+## Example incident report excerpt
 
-**Latest verified result:** 5 tests passed.
-
-## 10. HTTP and API Learning
-
-As part of the development exercises, HTTP GET and POST requests were tested using Python's `requests` library and the HTTPBin testing service.
-
-These exercises demonstrate:
-
-- Sending HTTP GET requests.
-- Sending JSON payloads using POST.
-- Reading HTTP status codes.
-- Parsing JSON responses.
-- Handling request exceptions.
-- Understanding API authentication and environment variables.
-
-These exercises do not represent a live integration with an AI provider.
-
-## 11. Safety and Reliability Principles
-
-The project follows these principles:
-
-- Never commit API keys, passwords, or secrets.
-- Use sanitized incident data.
-- Separate confirmed evidence from assumptions.
-- Do not claim a root cause is confirmed without supporting evidence.
-- Explain diagnostic commands before execution.
-- Never automatically execute AI-generated remediation commands.
-- Require engineer review before infrastructure changes.
-
-## 12. Development Progress
-
-### Completed and verified
-
-- [x] Basic prompt engineering concepts.
-- [x] Reusable incident-analysis prompt.
-- [x] Weak and structured Jenkins prompts.
-- [x] Prompt comparison exercises.
-- [x] Python application structure.
-- [x] Modular application architecture.
-- [x] Rule-based Maven and Docker error classification.
-- [x] Unknown error handling.
-- [x] Input validation and exception handling.
-- [x] HTTP GET and POST exercises.
-- [x] Five automated tests passed.
-
-### Planned improvements
-
-- [ ] Integrate a real AI model through an API.
-- [ ] Add more DevOps incident scenarios.
-- [ ] Evaluate AI response accuracy and safety.
-- [ ] Improve automated test coverage.
-- [ ] Add structured logging.
-- [ ] Make the Jenkins pipeline portable across agents.
-- [ ] Integrate automated CI/CD validation.
-- [ ] Add deployment and monitoring capabilities.
-
-## 13. Future Architecture
-
-The planned architecture will replace the simulated response engine with a real AI provider integration.
+The following is a representative mock-provider report for `mvn: command not found`. It is an example; the exact output depends on the selected provider and incident.
 
 ```text
-User Input
-    |
-    v
-Application
-    |
-    v
-Prompt Builder
-    |
-    v
-AI Provider API
-    |
-    v
-Response Validation
-    |
-    v
-Troubleshooting Report
-    |
-    v
-Engineer Review
+AI DEVOPS INCIDENT REPORT
+
+Provider              : mock
+Model                 : rule-based mock
+Incident              : mvn: command not found
+Root cause confirmed  : False
+
+AI TROUBLESHOOTING ANALYSIS
+Jenkins cannot find Maven.
+
+Possible causes:
+- Maven is not installed.
+- Maven is missing from PATH.
+
+Recommended action:
+Check Maven installation and PATH.
+
+Diagnostic commands:
+- mvn -version
+- where.exe mvn
+- echo %PATH%
+
+Troubleshooting steps:
+- Check whether Maven is installed.
+- Verify that Maven's bin directory is included in PATH.
+- Restart Jenkins after correcting the environment if necessary.
 ```
 
-The application will continue to keep engineers in control of diagnosis and remediation.
+The report offers possible explanations; it does not confirm a root cause. An engineer must investigate and review evidence.
 
-## 14. Final Project Goal
+## API error handling
 
-Build a practical AI + DevOps incident troubleshooting assistant that demonstrates Python development, prompt engineering, LLM integration, automated testing, CI/CD, and responsible AI usage.
+`GroqProvider` translates these Groq SDK exceptions into clearer `RuntimeError` messages:
 
-The final deliverable will be a portfolio project that demonstrates how AI can support real-world DevOps operations.
+- `AuthenticationError`
+- `RateLimitError`
+- `APITimeoutError`
+- `APIConnectionError`
+- `APIStatusError`
+
+The provider also reports missing API-key configuration, empty response choices, and empty response text. If the model response is marked as truncated, it appends a warning to the analysis.
+
+There is no automatic retry or backoff behavior. At the application level, keyboard interruption and input/output errors receive specific handling; other exceptions are displayed as unexpected application errors.
+
+## Tests
+
+The project uses Python's built-in `unittest` framework. Run all discoverable unit tests from the repository directory:
+
+```powershell
+python -m unittest discover -v
+```
+
+There are 24 test methods across five test modules.
+
+### `test_ai_client_simulation.py` (5 tests)
+
+- `test_maven_error`
+- `test_docker_error`
+- `test_unknown_error`
+- `test_prompt_contains_error`
+- `test_prompt_is_not_empty`
+
+### `test_app.py` (2 tests)
+
+- `test_main_with_default_mock_provider`
+- `test_main_with_groq_provider`
+
+The Groq application test replaces the SDK client with a mock and does not send a real API request.
+
+### `test_groq_provider.py` (10 tests)
+
+- `test_missing_api_key`
+- `test_successful_analysis`
+- `test_model_selection`
+- `test_empty_choices`
+- `test_empty_analysis`
+- `test_authentication_error`
+- `test_rate_limit_error`
+- `test_api_timeout_error`
+- `test_api_connection_error`
+- `test_api_status_error`
+
+The API failure tests use mocked Groq clients and local HTTPX request/response objects.
+
+### `test_incident_analyzer.py` (4 tests)
+
+- `test_maven_error`
+- `test_permission_error`
+- `test_timeout_error`
+- `test_unknown_error`
+
+### `test_provider_manager.py` (3 tests)
+
+- `test_default_provider`
+- `test_mock_provider_selection`
+- `test_unsupported_provider`
+
+**Latest reported verification:** 24/24 local tests passed. The latest Jenkins CI build is reported successful. These are reported project results, not live status checks.
+
+## Jenkins CI
+
+The pipeline is defined in `Jenkinsfile` and has five explicit stages:
+
+1. **Checkout Source**: Checks out the `main` branch from GitHub.
+2. **Verify Python**: Prints the configured Python version.
+3. **Install Dependencies**: Installs the Groq SDK.
+4. **Quality Gate - Unit Tests**: Runs `python -m unittest discover -v`.
+5. **Post-Test Verification**: Prints a success message after the tests pass.
+
+Jenkins UI also displays Declarative Pipeline's automatic SCM checkout as a separate visual node. This is additional to the five explicit Jenkinsfile stages.
+
+The current Jenkinsfile uses a machine-specific Windows Python path and Windows `bat` steps. It needs configuration changes to run on other Jenkins agents.
+
+## Implemented features
+
+- Python CLI for single-line incident input.
+- Provider interface and environment-based provider selection.
+- Mock provider with local Maven, Docker, and fallback rules.
+- Common five-field provider response shape for mock and Groq.
+- Groq API integration with API exception handling and response validation.
+- Structured troubleshooting prompt generation.
+- Unit tests for simulation, provider selection, provider behavior, and application-level flows.
+- Jenkins pipeline for dependency installation and the test quality gate.
+
+## Limitations
+
+- This is a CLI prototype, not a production deployment.
+- It analyzes text supplied by the user; it does not connect to Jenkins, Kubernetes, Docker, cloud accounts, or other infrastructure to collect incident data.
+- It does not automatically execute diagnostic commands or remediation.
+- The mock provider uses a small set of text rules; unrecognized incidents receive generic guidance.
+- The Groq model is configured in source code.
+- Dependency versions are not pinned in a project dependency file.
+- Jenkins uses a hard-coded Windows Python path and is not portable across agents without configuration changes.
+- The project does not include structured logging, service monitoring, deployment infrastructure, or production controls.
+- AWS Bedrock and Ollama providers are not implemented.
+
+## Planned future work
+
+- Add more incident scenarios and test coverage.
+- Evaluate troubleshooting accuracy and safety.
+- Improve logging and user-facing error reporting.
+- Add a dependency file with pinned or constrained package versions.
+- Make the Jenkins pipeline portable across Windows and other agent environments.
+- Improve configuration for model selection.
+- Explore a user interface and deployment only after application behavior and operational requirements are defined.
