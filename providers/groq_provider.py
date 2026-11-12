@@ -1,6 +1,13 @@
 
 import os
-from groq import Groq
+from groq import (
+    Groq,
+    AuthenticationError,
+    RateLimitError,
+    APIStatusError,
+    APIConnectionError,
+    APITimeoutError
+)
 
 from providers.base import AIProvider
 from prompt_builder import build_troubleshooting_prompt
@@ -27,15 +34,41 @@ class GroqProvider(AIProvider): #Because GroqProvider inherits from AIProvider #
             "Give practical diagnostic commands.\n\n"
             + prompt
         )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "user", "content": instructions}
+                ],
+                temperature=0.6,
+                max_completion_tokens=2000
+            )
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "user", "content": instructions}
-            ],
-            temperature=0.6,
-            max_completion_tokens=2000
-        )
+        except AuthenticationError:
+            raise RuntimeError(
+                "Groq authentication failed. Check your API key."
+            ) from None
+
+        except RateLimitError:
+            raise RuntimeError(
+                "Groq rate limit exceeded. Please try again later."
+            ) from None
+
+        except APITimeoutError:
+            raise RuntimeError(
+                "Groq API request timed out. Please try again."
+            ) from None
+
+        except APIConnectionError:
+            raise RuntimeError(
+                "Could not connect to Groq. Check your network."
+            ) from None
+
+        except APIStatusError as error:
+            raise RuntimeError(
+                f"Groq API returned HTTP status {error.status_code}."
+            ) from None
+
         #print("DEBUG - Finish reason:", response.choices[0].finish_reason) #This indicates why the AI stopped generating text. It can be "stop" (normal), "length" (truncated), or "content_filter" (filtered).
         #print("DEBUG - Completion tokens:", response.usage.completion_tokens) #This is the number of tokens used for the generated completion (the AI's response).
 
